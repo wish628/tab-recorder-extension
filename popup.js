@@ -50,6 +50,16 @@ async function startRecording() {
   try {
     console.log('=== STARTING RECORDING PROCESS ===');
     
+    // Show permission guidance
+    alert('PERMISSIONS REQUIRED:\n\n' +
+          '1. After clicking OK, look for YELLOW permission bar at TOP of webpage\n' +
+          '2. Click ALLOW on the permission dialog\n' +
+          '3. If microphone dialog appears, click ALLOW again\n' +
+          '4. Recording will start automatically\n\n' +
+          'If no permission bar appears:\n' +
+          '- Try a different website\n' +
+          '- Refresh the page and try again');
+    
     // Always cleanup first
     cleanupPreviousRecording();
     
@@ -239,6 +249,32 @@ async function startRecording() {
     recorder.start(1000); // Collect data every second
     console.log('Recording started with timeslice: 1000ms');
     console.log('Recorder state after start:', recorder.state);
+    
+    // Show recording started message
+    const recordingMsg = document.createElement('div');
+    recordingMsg.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #dc3545;
+      color: white;
+      padding: 20px;
+      border-radius: 5px;
+      z-index: 10001;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      font-weight: bold;
+    `;
+    recordingMsg.innerHTML = '🔴 RECORDING IN PROGRESS<br><small>Click STOP when finished</small>';
+    document.body.appendChild(recordingMsg);
+    
+    // Remove recording message after a few seconds
+    setTimeout(() => {
+      if (recordingMsg.parentNode) {
+        recordingMsg.parentNode.removeChild(recordingMsg);
+      }
+    }, 3000);
     
   } catch (error) {
     console.error('=== ERROR STARTING RECORDING ===');
