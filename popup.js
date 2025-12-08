@@ -1,7 +1,19 @@
 let recorder, chunks = [];
 
 document.getElementById('rec').onclick = () => {
-  startRecording();
+  // Show pre-recording instructions
+  document.getElementById('preRecordingInstructions').classList.remove('hidden');
+  document.getElementById('postRecordingInstructions').classList.add('hidden');
+  
+  // Hide instructions after 10 seconds
+  setTimeout(() => {
+    document.getElementById('preRecordingInstructions').classList.add('hidden');
+  }, 10000);
+  
+  // Start recording after a short delay to allow user to read instructions
+  setTimeout(() => {
+    startRecording();
+  }, 3000);
 };
 
 document.getElementById('stop').onclick = () => {
@@ -46,132 +58,140 @@ function cleanupPreviousRecording() {
   console.log('Cleanup complete');
 }
 
+// Function to check supported MIME types
+function getSupportedMimeType() {
+  const mimeTypes = [
+    'video/mp4; codecs="avc1.42E01E"',  // MP4 with H.264 video and AAC audio
+    'video/mp4; codecs="vp9"',           // MP4 with VP9 video
+    'video/mp4',                         // Generic MP4
+    'video/webm; codecs="vp8, vorbis"',  // WebM with VP8 video and Vorbis audio
+    'video/webm; codecs="vp9, opus"',    // WebM with VP9 video and Opus audio
+    'video/webm'                         // Generic WebM
+  ];
+  
+  for (const mimeType of mimeTypes) {
+    if (MediaRecorder.isTypeSupported(mimeType)) {
+      console.log('Supported MIME type:', mimeType);
+      return mimeType;
+    }
+  }
+  
+  console.log('No preferred MIME type supported, using default');
+  return ''; // Use default
+}
+
+// Function to get file extension based on MIME type
+function getFileExtension(mimeType) {
+  if (mimeType.startsWith('video/mp4')) {
+    return '.mp4';
+  } else if (mimeType.startsWith('video/webm')) {
+    return '.webm';
+  } else {
+    // Default to mp4 for better compatibility
+    return '.mp4';
+  }
+}
+
 async function startRecording() {
   try {
-    console.log('=== STARTING RECORDING PROCESS ===');
+    console.log('=== STARTING SCREEN RECORDING PROCESS ===');
     
-    // Show permission guidance
-    alert('PERMISSIONS REQUIRED:\n\n' +
-          '1. After clicking OK, look for YELLOW permission bar at TOP of webpage\n' +
-          '2. Click ALLOW on the permission dialog\n' +
-          '3. If microphone dialog appears, click ALLOW again\n' +
-          '4. Recording will start automatically\n\n' +
-          'If no permission bar appears:\n' +
-          '- Try a different website\n' +
-          '- Refresh the page and try again');
+    // Show post-recording instructions
+    document.getElementById('preRecordingInstructions').classList.add('hidden');
+    document.getElementById('postRecordingInstructions').classList.remove('hidden');
     
     // Always cleanup first
     cleanupPreviousRecording();
-    
-    // Check if tabCapture API is available
-    if (!chrome.tabCapture) {
-      throw new Error('tabCapture API not available in this context');
-    }
     
     // Disable the record button and enable stop button
     document.getElementById('rec').disabled = true;
     document.getElementById('stop').disabled = false;
     console.log('UI buttons updated');
     
-    // First, get active tab info
-    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-    console.log('Active tab:', tab);
+    // Request desktop capture
+    console.log('Requesting desktop capture...');
     
-    // Try to cancel any existing capture
-    console.log('Attempting to cancel any existing capture...');
-    try {
-      // This is a workaround to cancel existing captures
-      chrome.tabCapture.capture({
-        audio: false,
-        video: false
-      }, (nullStream) => {
-        console.log('Cleanup capture attempt result:', nullStream);
-      });
-    } catch (cleanupError) {
-      console.log('Cleanup capture attempt error:', cleanupError);
-    }
-    
-    // Wait a bit for cleanup
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    console.log('Requesting new tab capture...');
-    // Ask for tab capture permission
-    const tabStream = await new Promise((resolve, reject) => {
-      console.log('Calling chrome.tabCapture.capture...');
-      chrome.tabCapture.capture(
-        {
-          audio: true,
-          video: true
-        },
-        (stream) => {
-          console.log('=== TABCAPTURE CALLBACK EXECUTED ===');
-          console.log('Stream received:', stream);
-          console.log('Last error:', chrome.runtime.lastError);
-          
+    // Use chrome.desktopCapture to capture the entire screen
+    const streamId = await new Promise((resolve, reject) => {
+      chrome.desktopCapture.chooseDesktopMedia(
+        ['screen', 'window', 'tab'],  // Sources to capture
+        (streamId, options) => {
           if (chrome.runtime.lastError) {
-            console.error('Runtime error:', chrome.runtime.lastError);
-            reject(new Error(`Permission error: ${chrome.runtime.lastError.message}`));
-          } else if (!stream) {
-            console.error('No stream returned');
-            reject(new Error('No stream returned from tabCapture - permission likely denied'));
+            reject(new Error(chrome.runtime.lastError.message));
+          } else if (!streamId) {
+            reject(new Error('No stream ID returned - user cancelled selection'));
           } else {
-            console.log('Successfully received stream with tracks:', stream.getTracks());
-            resolve(stream);
+            console.log('Desktop capture stream ID received:', streamId);
+            console.log('Capture options:', options);
+            resolve(streamId);
           }
         }
       );
     });
-
-    console.log('Tab stream captured successfully:', tabStream);
-
+    
+    // Get the media stream using the stream ID
+    const constraints = {
+      video: {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: streamId,
+          maxWidth: 1920,
+          maxHeight: 1080,
+          maxFrameRate: 30
+        }
+      },
+      audio: false  // We'll get audio separately
+    };
+    
+    console.log('Getting desktop media stream with constraints:', constraints);
+    const screenStream = await navigator.mediaDevices.getUserMedia(constraints);
+    console.log('Screen stream captured successfully:', screenStream);
+    
+    // Ask for microphone permission separately
     console.log('Requesting microphone access...');
-    // Ask for microphone permission
     const micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     console.log('Microphone stream captured successfully:', micStream);
-
-    console.log('Merging audio streams...');
+    
     // Merge audio streams
+    console.log('Merging audio streams...');
     const audioCtx = new AudioContext();
     const dest = audioCtx.createMediaStreamDestination();
     
-    let trackCount = 0;
-    if (tabStream.getAudioTracks().length > 0) {
-      const tabAudioSource = audioCtx.createMediaStreamSource(tabStream);
-      tabAudioSource.connect(dest);
-      trackCount += tabStream.getAudioTracks().length;
-      console.log('Connected tab audio tracks:', tabStream.getAudioTracks().length);
-    }
-    
+    // Connect microphone audio to destination
     if (micStream.getAudioTracks().length > 0) {
       const micAudioSource = audioCtx.createMediaStreamSource(micStream);
       micAudioSource.connect(dest);
-      trackCount += micStream.getAudioTracks().length;
-      console.log('Connected microphone audio tracks:', micStream.getAudioTracks().length);
+      console.log('Connected microphone audio to destination');
     }
     
-    console.log('Total audio tracks connected:', trackCount);
-
-    // Create final stream with video from tab and merged audio
-    const videoTracks = tabStream.getVideoTracks();
+    // Create final stream with screen video and merged audio
+    const videoTracks = screenStream.getVideoTracks();
     const audioTracks = dest.stream.getAudioTracks();
     
     console.log('Video tracks:', videoTracks.length);
-    console.log('Merged audio tracks:', audioTracks.length);
+    console.log('Audio tracks:', audioTracks.length);
     
     const mixedStream = new MediaStream([
       ...videoTracks,
       ...audioTracks
     ]);
-
+    
     console.log('Mixed stream created with total tracks:', mixedStream.getTracks().length);
-
+    
     console.log('Initializing MediaRecorder...');
-    // Start recording
-    recorder = new MediaRecorder(mixedStream, { mimeType: 'video/webm' });
+    // Check for supported MIME type (prefer MP4 for better compatibility)
+    const mimeType = getSupportedMimeType();
+    const fileExtension = getFileExtension(mimeType);
+    
+    // Start recording with the best supported format
+    const recorderOptions = mimeType ? { mimeType: mimeType } : {};
+    recorder = new MediaRecorder(mixedStream, recorderOptions);
     chunks = [];
     
     console.log('MediaRecorder state:', recorder.state);
-
+    console.log('Using MIME type:', mimeType || 'default');
+    console.log('File extension:', fileExtension);
+    
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         chunks.push(event.data);
@@ -180,19 +200,23 @@ async function startRecording() {
         console.log('Empty chunk received');
       }
     };
-
+    
     recorder.onstop = () => {
       console.log('=== RECORDER STOPPED ===');
       console.log('Total chunks collected:', chunks.length);
       
+      // Stop all tracks when recording stops
+      screenStream.getTracks().forEach(track => track.stop());
+      micStream.getTracks().forEach(track => track.stop());
+      
       if (chunks.length > 0 && chunks.reduce((total, chunk) => total + chunk.size, 0) > 0) {
-        const blob = new Blob(chunks, { type: 'video/webm' });
+        const blob = new Blob(chunks, { type: mimeType || 'video/mp4' });
         console.log('Blob created, size:', blob.size, 'bytes');
         
         if (blob.size > 0) {
           // Create download link that stays open for user interaction
           const url = URL.createObjectURL(blob);
-          const filename = `recording-${Date.now()}.webm`;
+          const filename = `screen-recording-${Date.now()}${fileExtension}`;
           console.log('Creating download link for file:', filename);
           
           // Create a prominent download link in the popup
@@ -222,7 +246,7 @@ async function startRecording() {
           document.body.appendChild(downloadContainer);
           
           // Also show alert to notify user
-          alert('Recording complete!\n\n' +
+          alert('Screen recording complete!\n\n' +
                 'A download link has appeared at the top of this popup.\n' +
                 'Click it or right-click to save to your preferred location.');
           
@@ -245,63 +269,50 @@ async function startRecording() {
       // Don't close the popup automatically
       // Let user close it manually after downloading
     };
-
+    
     recorder.start(1000); // Collect data every second
     console.log('Recording started with timeslice: 1000ms');
     console.log('Recorder state after start:', recorder.state);
     
-    // Show recording started message
-    const recordingMsg = document.createElement('div');
-    recordingMsg.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #dc3545;
-      color: white;
-      padding: 20px;
-      border-radius: 5px;
-      z-index: 10001;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      font-weight: bold;
-    `;
-    recordingMsg.innerHTML = '🔴 RECORDING IN PROGRESS<br><small>Click STOP when finished</small>';
-    document.body.appendChild(recordingMsg);
-    
-    // Remove recording message after a few seconds
-    setTimeout(() => {
-      if (recordingMsg.parentNode) {
-        recordingMsg.parentNode.removeChild(recordingMsg);
-      }
-    }, 3000);
-    
   } catch (error) {
-    console.error('=== ERROR STARTING RECORDING ===');
+    console.error('=== ERROR STARTING SCREEN RECORDING ===');
     console.error('Error starting recording:', error);
+    
+    // Hide instructions on error
+    document.getElementById('preRecordingInstructions').classList.add('hidden');
+    document.getElementById('postRecordingInstructions').classList.add('hidden');
     
     // Cleanup on error
     cleanupPreviousRecording();
     
-    // Provide more detailed error message with permission guidance
-    let errorMessage = 'Error starting recording: ' + error.message + '\n\n';
+    // Provide more detailed error message
+    let errorMessage = 'Error starting screen recording: ' + error.message + '\n\n';
     
-    if (error.message.includes('Permission')) {
-      errorMessage += 'PERMISSIONS NEEDED:\n' +
-                     '1. Look for YELLOW permission bar at TOP of webpage\n' +
-                     '2. Click "Allow" on the permission dialog\n' +
-                     '3. If microphone dialog appears, click "Allow" again\n\n' +
+    if (error.message.includes('Permission') || error.message.includes('denied')) {
+      errorMessage += 'SCREEN CAPTURE PERMISSIONS NEEDED:\n' +
+                     '1. Chrome will show a screen selection dialog\n' +
+                     '2. Choose what to share (entire screen, window, or tab)\n' +
+                     '3. Click "Share" to allow screen capture\n' +
+                     '4. Allow microphone access when prompted\n\n' +
                      'TROUBLESHOOTING:\n' +
                      '- Close all Chrome windows and reopen\n' +
-                     '- Try recording a different website\n' +
+                     '- Try recording again\n' +
                      '- Check Chrome settings: Settings > Privacy > Camera & Microphone\n';
+    } else if (error.message.includes('cancelled') || error.message.includes('cancel')) {
+      errorMessage += 'RECORDING CANCELLED:\n' +
+                     'You cancelled the screen selection.\n' +
+                     'To record, you must:\n' +
+                     '1. Click REC button\n' +
+                     '2. Select what to share (screen/window/tab)\n' +
+                     '3. Click "Share"\n' +
+                     '4. Allow microphone access\n';
     } else {
       errorMessage += 'Check the console (Ctrl+Shift+J) for detailed error information.\n\n' +
                      'Common issues:\n' +
                      '- Permissions not granted\n' +
-                     '- Trying to record restricted pages\n' +
-                     '- No audio/video content in tab\n' +
-                     '- Browser policies blocking capture';
+                     '- Browser policies blocking screen capture\n' +
+                     '- No audio/video content\n' +
+                     '- Browser restrictions';
     }
     
     alert(errorMessage);
@@ -313,7 +324,10 @@ async function startRecording() {
 }
 
 function stopRecording() {
-  console.log('=== STOPPING RECORDING ===');
+  console.log('=== STOPPING SCREEN RECORDING ===');
+  
+  // Hide post-recording instructions
+  document.getElementById('postRecordingInstructions').classList.add('hidden');
   
   if (recorder && recorder.state !== 'inactive') {
     console.log('Stopping recorder...');
@@ -335,7 +349,7 @@ function stopRecording() {
       font-family: Arial, sans-serif;
       text-align: center;
     `;
-    processingMsg.innerHTML = '<strong>Processing recording...</strong><br>Please wait';
+    processingMsg.innerHTML = '<strong>Processing screen recording...</strong><br>Please wait';
     document.body.appendChild(processingMsg);
     
     // Remove processing message after a few seconds
