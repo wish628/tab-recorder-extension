@@ -3,8 +3,8 @@
 > **Professional screen recording for Chrome with MP4 support, auto-minimize, and invisible recording. Perfect for tutorials, presentations, and demos.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green.svg)](https://github.com/wish628/tab-recorder-extension)
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/wish628/tab-recorder-extension/releases)
+[![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green.svg)](https://github.com/wish628/screen-recorder-extension)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/wish628/screen-recorder-extension/releases)
 
 ## ✨ Features
 
@@ -65,7 +65,7 @@ The recorder uses **Smart Stop** technology:
 ## 📁 Project Structure
 
 ```
-tab-recorder-extension/
+screen-recorder-extension/
 ├── manifest.json          # Extension configuration
 ├── background.js          # Service worker for downloads
 ├── popup.html            # Extension popup launcher
@@ -185,8 +185,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- [GitHub Repository](https://github.com/wish628/tab-recorder-extension)
-- [Report Issues](https://github.com/wish628/tab-recorder-extension/issues)
+- [GitHub Repository](https://github.com/wish628/screen-recorder-extension)
+- [Report Issues](https://github.com/wish628/screen-recorder-extension/issues)
 - [Privacy Policy](PRIVACY_POLICY.md)
 - [Chrome Web Store](#) *(Coming soon)*
 

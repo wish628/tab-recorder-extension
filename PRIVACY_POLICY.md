@@ -78,7 +78,7 @@ We may update this privacy policy. Changes will be posted on this page with an u
 ## Contact
 
 For privacy concerns or questions:
-- GitHub: https://github.com/wish628/tab-recorder-extension
+- GitHub: https://github.com/wish628/screen-recorder-extension
 - Email: [Your email if you want to provide one]
 
 ## Compliance
