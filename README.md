@@ -1,9 +1,10 @@
 # 🎥 Screen Recorder - Chrome Extension
 
-> Professional screen recording extension for Chrome with MP4 support, auto-minimize, and invisible recording features.
+> **Professional screen recording for Chrome with MP4 support, auto-minimize, and invisible recording. Perfect for tutorials, presentations, and demos.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-green.svg)](https://github.com/wish628/tab-recorder-extension)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/wish628/tab-recorder-extension/releases)
 
 ## ✨ Features
 
@@ -14,11 +15,11 @@
 - 🛑 **Smart Stop** - Recording stops instantly when you restore the window
 - 💾 **Auto-Download** - Videos save automatically to your Downloads folder
 - 🎨 **Modern UI** - Beautiful gradient interface with smooth animations
+- 🔒 **Privacy-Focused** - No data collection, all processing happens locally
 
 ## 📸 Screenshots
 
-<!-- TODO: Add screenshots here -->
-*Coming soon - Professional UI screenshots*
+> **Note:** To add screenshots, take captures of the extension and save them in the `screenshots/` folder. See [SCREENSHOTS.md](SCREENSHOTS.md) for detailed instructions.
 
 ## 🚀 Quick Start
 
@@ -65,15 +66,17 @@ The recorder uses **Smart Stop** technology:
 
 ```
 tab-recorder-extension/
-├── manifest.json       # Extension configuration
-├── background.js       # Service worker for downloads
-├── popup.html         # Extension popup launcher
-├── popup.js           # Popup logic
-├── recorder.html      # Detached recorder window
-├── recorder.js        # Recording logic
-├── icon.svg           # Extension icon
-├── LICENSE            # MIT License
-└── README.md          # This file
+├── manifest.json          # Extension configuration
+├── background.js          # Service worker for downloads
+├── popup.html            # Extension popup launcher
+├── popup.js              # Popup logic
+├── recorder.html         # Detached recorder window
+├── recorder.js           # Recording logic
+├── icon.svg              # Extension icon
+├── LICENSE               # MIT License
+├── PRIVACY_POLICY.md     # Privacy policy
+├── CHROME_WEB_STORE.md   # Publishing guide
+└── README.md             # This file
 ```
 
 ## 🔧 How It Works
@@ -129,11 +132,12 @@ The extension prioritizes MP4 (H.264) encoding:
 
 ## 📝 Version History
 
-### v1.4 (Current)
+### v1.4.0 (Current)
 - ✅ Professional UI redesign with gradients
 - ✅ Simplified workflow (one-click start)
 - ✅ Improved Smart Stop reliability
 - ✅ Better error handling and user feedback
+- ✅ Chrome Web Store ready
 
 ### v1.3
 - ✅ MP4/H.264 recording support
@@ -151,6 +155,14 @@ The extension prioritizes MP4 (H.264) encoding:
 - **Microphone Only**: Only microphone audio can be recorded
 - **Chrome Only**: Designed specifically for Chrome/Chromium browsers
 - **Permissions Required**: Needs screen capture and microphone permissions
+
+## 🚀 Chrome Web Store
+
+Ready to publish! See [CHROME_WEB_STORE.md](CHROME_WEB_STORE.md) for detailed publishing instructions.
+
+## 🔒 Privacy
+
+This extension does NOT collect any data. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for details.
 
 ## 🤝 Contributing
 
@@ -175,6 +187,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [GitHub Repository](https://github.com/wish628/tab-recorder-extension)
 - [Report Issues](https://github.com/wish628/tab-recorder-extension/issues)
+- [Privacy Policy](PRIVACY_POLICY.md)
 - [Chrome Web Store](#) *(Coming soon)*
 
 ---
