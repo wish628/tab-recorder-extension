@@ -9,6 +9,7 @@ const recBtn = document.getElementById('rec');
 const stopBtn = document.getElementById('stop');
 const statusText = document.getElementById('statusText');
 const statusDiv = document.getElementById('status');
+const autoSaveToggle = document.getElementById('autoSaveToggle');
 
 // Update UI
 function updateUI(recording, status) {
@@ -74,6 +75,26 @@ function cleanup() {
     chunks = [];
     activeStream = null;
     micStream = null;
+}
+
+// Download function
+function downloadRecording(blob, mimeType) {
+    const extension = mimeType.includes('mp4') ? '.mp4' : '.webm';
+    const filename = `recording-${Date.now()}${extension}`;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log('Download completed:', filename);
+    }, 100);
 }
 
 // Start recording
@@ -174,23 +195,8 @@ recBtn.onclick = async () => {
                 return;
             }
 
-            // Download directly
-            const extension = mimeType.includes('mp4') ? '.mp4' : '.webm';
-            const filename = `recording-${Date.now()}${extension}`;
-
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                console.log('Download completed:', filename);
-            }, 100);
+            // Download the recording
+            downloadRecording(blob, mimeType);
 
             updateUI(false, '✅ Saved!');
             setTimeout(() => updateUI(false, 'Ready to Record'), 3000);
@@ -249,7 +255,7 @@ recBtn.onclick = async () => {
 
 // Stop recording
 stopBtn.onclick = () => {
-    console.log('=== STOP RECORDING ===');
+    console.log('=== STOP BUTTON CLICKED ===');
     updateUI(false, 'Stopping...');
 
     // Restore window first
@@ -281,10 +287,21 @@ chrome.runtime.onMessage.addListener((msg) => {
     }
 });
 
-// Smart Stop - auto-stop when window focused
+// Smart Stop - auto-stop when window focused (only if auto-save is enabled)
 window.addEventListener('focus', () => {
     if (recorder && recorder.state === 'recording') {
-        console.log('Smart Stop: Window focused');
-        stopBtn.click();
+        // Check auto-save toggle
+        const autoSaveEnabled = autoSaveToggle ? autoSaveToggle.checked : true;
+
+        if (autoSaveEnabled) {
+            console.log('Smart Stop: Window focused with auto-save enabled');
+            stopBtn.click();
+        } else {
+            console.log('Smart Stop disabled: Auto-save is OFF, waiting for manual STOP');
+            // Just restore the window, don't auto-stop
+            chrome.windows.getCurrent((window) => {
+                chrome.windows.update(window.id, { state: 'normal', focused: true });
+            });
+        }
     }
 });

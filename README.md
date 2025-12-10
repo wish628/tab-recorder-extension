@@ -19,7 +19,25 @@
 
 ## 📸 Screenshots
 
-> **Note:** To add screenshots, take captures of the extension and save them in the `screenshots/` folder. See [SCREENSHOTS.md](SCREENSHOTS.md) for detailed instructions.
+### Extension Popup
+<img src="screenshots/popup.png" alt="Extension Popup" width="400">
+
+*Clean, simple launcher - one click to start recording*
+
+### Recorder Window
+<img src="screenshots/recorder-window.png" alt="Recorder Window" width="400">
+
+*Minimalist interface with auto-save toggle*
+
+### Recording in Progress
+<img src="screenshots/recording-active.png" alt="Recording Active" width="400">
+
+*Live recording status with pulsing indicator*
+
+### Auto-Save Toggle Feature
+<img src="screenshots/toggle-feature.png" alt="Toggle Feature" width="400">
+
+*Control auto-save behavior with a simple toggle*
 
 ## 🚀 Quick Start
 
